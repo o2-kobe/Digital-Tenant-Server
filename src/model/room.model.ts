@@ -25,6 +25,7 @@ const roomSchema = new Schema<RoomDocument>(
     timestamps: true,
   },
 );
+
 roomSchema.index({ propertyId: 1, isOccupied: 1 });
 
 roomSchema.set("toJSON", {
