@@ -19,11 +19,11 @@ const propertySchema = new Schema<PropertyDocument>(
       ref: "User",
       required: true,
     },
-    name: { type: String, required: true, min: 3 },
-    city: { type: String, required: true, min: 3 },
-    town: { type: String, required: true, min: 3 },
-    image: { type: String, required: true, min: 3 },
-    address: { type: String, required: true, min: 3 }, //make this optional
+    name: { type: String, required: true, minLength: 3 },
+    city: { type: String, required: true, minLength: 3 },
+    town: { type: String, required: true, minLength: 3 },
+    image: { type: String, required: true, minLength: 3 },
+    address: { type: String, required: true, minLength: 3 }, //make this optional
   },
   {
     timestamps: true,
