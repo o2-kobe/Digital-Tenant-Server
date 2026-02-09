@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Document } from "mongoose";
 import bcrypt from "bcrypt";
 import config from "config";
 
@@ -16,14 +16,14 @@ export interface UserDocument extends Document {
 
 const userSchema = new Schema<UserDocument>(
   {
-    email: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
     username: { type: String, required: true },
     password: { type: String, required: true, select: false },
     role: {
       type: String,
       required: true,
       default: "tenant",
-      enum: ["tenant", "lanlord"],
+      enum: ["tenant", "landlord"],
     },
   },
   {
