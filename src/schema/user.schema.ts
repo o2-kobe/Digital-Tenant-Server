@@ -2,10 +2,11 @@ import { object, z } from "zod";
 
 export const createUserSchema = object({
   body: object({
-    name: z
+    username: z
       .string()
-      .nonempty("Name is required")
-      .min(4, "Name must be at least 4 characters"),
+      .nonempty("Username is required")
+      .min(4, "Userame must be at least 4 characters"),
+    role: z.enum(["tenant", "landlord"]),
     email: z.email(),
     password: z
       .string()

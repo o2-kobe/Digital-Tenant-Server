@@ -1,9 +1,21 @@
 import { QueryFilter } from "mongoose";
 import User, { UserDocument } from "../model/user.model";
 import { CreateUserInput } from "../schema/user.schema";
+import { generateUniqueTenantCode } from "../utils/helper";
 
 export async function createUser(input: CreateUserInput) {
-  return await User.create(input);
+  const userData: Partial<UserDocument> = {
+    username: input.username,
+    email: input.email,
+    password: input.password,
+    role: input.role,
+  };
+
+  if (input.role === "tenant") {
+    userData.tenantCode = await generateUniqueTenantCode();
+  }
+
+  return await User.create(userData);
 }
 
 export async function findUser(query: QueryFilter<UserDocument>) {
