@@ -6,9 +6,7 @@ import {
 } from "../schema/room.schema";
 import { Errors } from "../utils/factoryErrors";
 
-/**
- * Create a room under a property (ownership enforced)
- */
+// Create a room under a property (ownership enforced)
 export async function createRoom(
   landlordId: string,
   propertyId: string,
@@ -26,9 +24,8 @@ export async function createRoom(
   return Room.create({ propertyId, ...data });
 }
 
-/**
- * Get all rooms for a property (ownership enforced)
- */
+// Get all rooms for a property (ownership enforced)
+
 export async function getRoomsByProperty(
   landlordId: string,
   propertyId: string,
@@ -45,9 +42,7 @@ export async function getRoomsByProperty(
   return Room.find({ propertyId }).sort({ createdAt: 1 });
 }
 
-/**
- * Get a room by ID (ownership enforced via property)
- */
+//  * Get a room by ID (ownership enforced via property)
 export async function getRoomById(landlordId: string, roomId: string) {
   const room = await Room.findById(roomId);
 
@@ -67,9 +62,8 @@ export async function getRoomById(landlordId: string, roomId: string) {
   return room;
 }
 
-/**
- * Update room details
- */
+// Update room details
+
 export async function updateRoom(
   landlordId: string,
   roomId: string,
@@ -96,9 +90,7 @@ export async function updateRoom(
   return room;
 }
 
-/**
- * Delete a room
- */
+//  * Delete a room
 export async function deleteRoom(landlordId: string, roomId: string) {
   const room = await Room.findById(roomId);
 
