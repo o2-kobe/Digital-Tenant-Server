@@ -20,7 +20,13 @@ const userSchema = new Schema<UserDocument>(
   {
     email: { type: String, required: true, unique: true },
     username: { type: String, required: true },
-    password: { type: String, required: true, select: false },
+    password: {
+      type: String,
+      required: true,
+      minLength: 8,
+      maxLength: 64,
+      select: false,
+    },
     role: {
       type: String,
       required: true,
