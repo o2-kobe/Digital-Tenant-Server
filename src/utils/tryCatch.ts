@@ -56,6 +56,29 @@ export const TryCatch =
         });
       }
 
+      // 4️⃣ Duplicate Key Error
+      if (error.code === 11000) {
+        return res.status(409).json({
+          status: "fail",
+          message: "Duplicate field value entered",
+        });
+      }
+
+      // 5️⃣ JWT Errors
+      if (error.name === "JsonWebTokenError") {
+        return res.status(401).json({
+          status: "fail",
+          message: "Invalid token",
+        });
+      }
+
+      if (error.name === "TokenExpiredError") {
+        return res.status(401).json({
+          status: "fail",
+          message: "Token expired",
+        });
+      }
+
       //  Unknown / Programming errors
 
       return res.status(500).json({
@@ -64,23 +87,3 @@ export const TryCatch =
       });
     }
   };
-
-/**
-  Sample service use case 
-
-import { AppError } from "../utils/AppError";
-
-export const createReservation = async (data: any) => {
-  if (!data.startDate) {
-    throw new AppError("Start date is required", 400);
-  }
-
-  if (data.startDate < new Date()) {
-    throw new AppError("Reservation date cannot be in the past", 400);
-  }
-
-  // business logic
-  return reservation;
-};
-
-   */
