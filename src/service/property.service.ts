@@ -1,13 +1,13 @@
 import Property from "../model/property.model";
 import {
-  createPropertyServiceType,
-  updatePropertyServiceType,
+  CreatePropertyInput,
+  UpdatePropertyInput,
 } from "../schema/property.schema";
 import { Errors } from "../utils/factoryErrors";
 
 export async function createProperty(
   landlordId: string,
-  data: createPropertyServiceType,
+  data: CreatePropertyInput,
 ) {
   return await Property.create({ landlordId, ...data });
 }
@@ -35,7 +35,7 @@ export async function getPropertyById(propertyId: string, landlordId?: string) {
 export async function updateProperty(
   propertyId: string,
   landlordId: string,
-  update: updatePropertyServiceType,
+  update: UpdatePropertyInput,
 ) {
   const updatedProperty = await Property.findOneAndUpdate(
     { _id: propertyId, landlordId },
