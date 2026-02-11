@@ -1,16 +1,25 @@
-import z from "zod";
+import { z } from "zod";
 
-const tenancyPayload = z.object({
-  body: z.object({
-    tenantCode: z.string(),
-    startDate: z.coerce.date(),
+// Reusable MongoDB ObjectId validator
+const objectId = z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID");
+
+// Body
+const tenancyBody = z.object({
+  tenantCode: z.string().min(1, "Tenant code is required"),
+  startDate: z.coerce.date(),
+});
+
+// Full request schema (params + body)
+export const createTenancySchema = z.object({
+  params: z.object({
+    propertyId: objectId,
+    roomId: objectId,
   }),
+  body: tenancyBody,
 });
 
-const endTenancySchema = z.object({
-  endDate: z.coerce.date(),
-});
+export type CreateTenancyServiceInput = z.infer<
+  typeof createTenancySchema
+>["body"];
 
-export type createTenancyServiceType = z.infer<typeof tenancyPayload>["body"];
-
-export type endTenancyType = z.infer<typeof endTenancySchema>;
+export type CreateTenancyControllerInput = z.infer<typeof createTenancySchema>;

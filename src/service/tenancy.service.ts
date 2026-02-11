@@ -3,22 +3,14 @@ import Room from "../model/room.model";
 import Property from "../model/property.model";
 import User from "../model/user.model";
 import { Errors } from "../utils/factoryErrors";
+import { CreateTenancyServiceInput } from "../schema/tenancy.schema";
 
-type CreateTenancyInput = {
-  landlordId: string; // from auth
-  propertyId: string; // from params
-  roomId: string; // from params
-  tenantCode: string; // from payload
-  startDate: Date;
-};
-
-export async function createTenancy({
-  landlordId, //from the user which is the landlord
-  propertyId, //from params
-  roomId, //from params
-  tenantCode, //from payload
-  startDate, //fro, payload
-}: CreateTenancyInput) {
+export async function createTenancy(
+  landlordId: string,
+  propertyId: string,
+  roomId: string,
+  { tenantCode, startDate }: CreateTenancyServiceInput,
+) {
   // Resolve tenant
   const tenant = await User.findOne({ tenantCode }).select("_id role").lean();
   if (!tenant) {
