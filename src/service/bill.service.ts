@@ -1,12 +1,12 @@
 import Bill from "../model/bill.model";
 import Tenancy from "../model/tenancy.model";
-import { createBillServiceType } from "../schema/bill.schema";
+import { CreateBillInput, UpdateBillInput } from "../schema/bill.schema";
 import { Errors } from "../utils/factoryErrors";
 
 export async function createBill(
   tenancyId: string,
   landlordId: string,
-  data: createBillServiceType,
+  data: CreateBillInput,
 ) {
   // Validate tenancy
   const tenancy = await Tenancy.findOne({ _id: tenancyId, landlordId }).lean();
@@ -35,11 +35,28 @@ export async function getBillsByTenant(tenantId: string) {
   });
 }
 
-export async function markBillAsPaid(
+export async function updateBill(
+  landlordId: string,
   billId: string,
-  paidAt: Date,
-  tenantId: string,
+  update: UpdateBillInput,
 ) {
+  const bill = await Bill.findById(billId).lean();
+  if (!bill) throw Errors.notFound("Bill does not exist");
+
+  const tenancy = await Tenancy.findOne({
+    _id: bill.tenancyId,
+    landlordId,
+    isActive: true,
+  }).lean();
+
+  if (!tenancy) {
+    throw Errors.forbidden("You cannot alter this bill");
+  }
+
+  return await Bill.findByIdAndUpdate(billId, update, { new: true });
+}
+
+export async function markBillAsPaid(billId: string, tenantId: string) {
   // We cannot pay for an inactive tenancy
   const tenancy = await Tenancy.findOne({ tenantId, isActive: true }).lean();
 
@@ -47,7 +64,7 @@ export async function markBillAsPaid(
 
   const bill = await Bill.findOneAndUpdate(
     { _id: billId, tenancyId: tenancy._id },
-    { status: "paid", paidAt },
+    { status: "paid", paidAt: new Date() },
     { new: true },
   );
 
@@ -67,7 +84,7 @@ export async function markBillAsCompleted(billId: string, landlordId: string) {
   }).lean();
 
   if (!tenancy) {
-    throw Errors.forbidden("You do not own this bill");
+    throw Errors.forbidden("You cannot alter this bill");
   }
 
   return await Bill.findByIdAndUpdate(
