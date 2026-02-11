@@ -1,16 +1,13 @@
 import Room from "../model/room.model";
 import Property from "../model/property.model";
-import {
-  createRoomServiceType,
-  updateRoomServiceType,
-} from "../schema/room.schema";
+import { CreateRoomInput, UpdateRoomInput } from "../schema/room.schema";
 import { Errors } from "../utils/factoryErrors";
 
 // Create a room under a property (ownership enforced)
 export async function createRoom(
   landlordId: string,
   propertyId: string,
-  data: createRoomServiceType,
+  data: CreateRoomInput,
 ) {
   const property = await Property.findOne({
     _id: propertyId,
@@ -25,7 +22,6 @@ export async function createRoom(
 }
 
 // Get all rooms for a property (ownership enforced)
-
 export async function getRoomsByProperty(
   landlordId: string,
   propertyId: string,
@@ -67,7 +63,7 @@ export async function getRoomById(landlordId: string, roomId: string) {
 export async function updateRoom(
   landlordId: string,
   roomId: string,
-  update: updateRoomServiceType,
+  update: UpdateRoomInput,
 ) {
   const room = await Room.findById(roomId);
 
