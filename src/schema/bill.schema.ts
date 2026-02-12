@@ -14,6 +14,9 @@ const billBody = z.object({
 // Route schemas
 export const createBillSchema = z.object({
   body: billBody,
+  params: z.object({
+    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
+  }),
 });
 
 export const updateBillSchema = z.object({
