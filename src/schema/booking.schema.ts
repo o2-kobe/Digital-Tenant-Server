@@ -1,10 +1,24 @@
 import { z } from "zod";
 
-const bookingPayload = z.object({
-  body: z.object({
-    fullName: z.string().trim().min(3).max(20),
-    contactInfo: z.string().trim().min(5).max(20),
+// Body schema
+const bookingBody = z.object({
+  fullName: z.string().trim().min(3).max(20),
+  contactInfo: z.string().trim().min(5).max(20),
+});
+
+// Route schemas
+export const createBookingSchema = z.object({
+  body: bookingBody,
+  params: z.object({
+    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
   }),
 });
 
-export type createBookingType = z.infer<typeof bookingPayload>["body"];
+export const bookingParamsSchema = z.object({
+  params: z.object({
+    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
+  }),
+});
+
+// Types
+export type CreateBookingInput = z.infer<typeof bookingBody>;

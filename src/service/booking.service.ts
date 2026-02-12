@@ -1,15 +1,12 @@
-// createBooking(roomId, data)
-// getBookingsByRoom(roomId)
-
 import Booking from "../model/booking.model";
 import Property from "../model/property.model";
 import Room from "../model/room.model";
-import { createBookingType } from "../schema/booking.schema";
+import { CreateBookingInput } from "../schema/booking.schema";
 import { Errors } from "../utils/factoryErrors";
 
 export async function createBooking(
   roomId: string,
-  bookingDetails: createBookingType,
+  bookingDetails: CreateBookingInput,
 ) {
   return await Booking.create({
     roomId,
@@ -18,7 +15,7 @@ export async function createBooking(
   });
 }
 
-// WIll be used by landlord to retrieve all bookings
+// Used by landlord to retrieve all bookings
 export async function getBookingsByRoom(roomId: string, landlordId: string) {
   // Find property related to room
   const property = await Property.findOne({ landlordId }).lean();
