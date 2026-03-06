@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { ZodType, z } from "zod";
+import { ZodError, ZodType, z } from "zod";
 
 const validateResource =
   <T extends ZodType<any, any, any>>(schema: T) =>
@@ -18,10 +18,23 @@ const validateResource =
 
       next();
     } catch (error: any) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Validation failed",
-        errors: error.errors,
+      if (error instanceof ZodError) {
+        const formatted = error.issues.map((e) => ({
+          path: e.path.join("."), // convert path array to string
+          message: e.message,
+        }));
+
+        return res.status(400).json({
+          status: "fail",
+          message: "Validation failed",
+          errors: formatted,
+        });
+      }
+
+      // Fallback for unexpected errors
+      return res.status(500).json({
+        status: "error",
+        message: "Something went wrong",
       });
     }
   };
