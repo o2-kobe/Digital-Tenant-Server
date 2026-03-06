@@ -1,7 +1,6 @@
 import { model, Schema, Document } from "mongoose";
-import bcrypt from "bcrypt";
-import config from "config";
 import { generateRandomKey } from "../utils/helper";
+import argon2 from "argon2";
 
 export interface UserDocument extends Document {
   email: string;
@@ -18,7 +17,14 @@ export interface UserDocument extends Document {
 
 const userSchema = new Schema<UserDocument>(
   {
-    email: { type: String, required: true, unique: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
     username: { type: String, required: true },
     password: {
       type: String,
@@ -30,7 +36,6 @@ const userSchema = new Schema<UserDocument>(
     role: {
       type: String,
       required: true,
-      default: "tenant",
       enum: ["tenant", "landlord"],
     },
     tenantCode: {
@@ -47,10 +52,12 @@ const userSchema = new Schema<UserDocument>(
 
 userSchema.pre("save", async function () {
   if (this.isModified("password")) {
-    const salt = await bcrypt.genSalt(config.get<number>("saltWorkFactor"));
-    const hash = await bcrypt.hash(this.password, salt);
-
-    this.password = hash;
+    this.password = await argon2.hash(this.password, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 16,
+      timeCost: 3,
+      parallelism: 1,
+    });
   }
 });
 
@@ -72,7 +79,7 @@ userSchema.set("toJSON", {
 userSchema.methods.comparePassword = async function (
   candidatePassword: string,
 ): Promise<boolean> {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return await argon2.verify(this.password, candidatePassword);
 };
 
 const User = model<UserDocument>("User", userSchema);

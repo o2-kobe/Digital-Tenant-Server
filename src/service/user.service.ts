@@ -2,6 +2,7 @@ import { QueryFilter } from "mongoose";
 import User, { UserDocument } from "../model/user.model";
 import { CreateUserInput } from "../schema/user.schema";
 import { generateUniqueTenantCode } from "../utils/helper";
+import { Errors } from "../utils/factoryErrors";
 
 export async function createUser(input: CreateUserInput) {
   const userData: Partial<UserDocument> = {
@@ -22,8 +23,23 @@ export async function findUser(query: QueryFilter<UserDocument>) {
   const user = await User.findOne(query);
 
   if (!user) {
-    throw new Error("Invalid credentials");
+    throw Errors.forbidden("Invalid credentials");
   }
+
+  return user;
+}
+
+export async function getCurrentUser(userId: string) {
+  const user = await User.findById(userId)
+    .select({
+      email: 1,
+      role: 1,
+      username: 1,
+      _id: 0,
+    })
+    .lean();
+
+  if (!user) throw Errors.forbidden("Invalid credentials");
 
   return user;
 }
@@ -39,7 +55,9 @@ export async function validatePassword({
   email: string;
   password: string;
 }) {
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email: email.toLowerCase().trim() }).select(
+    "+password",
+  );
 
   if (!user) return false;
 
