@@ -1,14 +1,31 @@
 import { QueryFilter, UpdateQuery } from "mongoose";
 import Session, { Session as SessionDocument } from "../model/session.model";
-import { signJwt, verifyJwt } from "../utils/jwt.utils";
-import { get } from "lodash";
+import { signJwt } from "../utils/jwt.utils";
 import User from "../model/user.model";
+import { StringValue } from "ms";
 import config from "config";
+import crypto from "crypto";
+import { Errors } from "../utils/factoryErrors";
 
-export async function createSession(userId: string, userAgent: string) {
-  const session = await Session.create({ user: userId, userAgent });
+function hashToken(token: string) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
-  return session;
+export async function createSession(
+  userId: string,
+  userAgent: string,
+  ip: string | undefined,
+) {
+  const rawRefreshToken = crypto.randomBytes(64).toString("hex");
+
+  const session = await Session.create({
+    user: userId,
+    userAgent,
+    ip,
+    refreshToken: hashToken(rawRefreshToken),
+  });
+
+  return { session, rawRefreshToken };
 }
 
 export async function getSessions(query: QueryFilter<SessionDocument>) {
@@ -24,40 +41,42 @@ export async function updateSession(
   return await Session.updateOne(query, update);
 }
 
-export async function deleteAllSessions() {
-  return await Session.deleteMany({});
-}
-
-const accessTokenTtl = config.get<string>("accessTokenTtl");
+const accessTokenTtl = config.get<StringValue>("accessTokenTtl");
 
 export async function reIssueAccessToken({
   refreshToken,
 }: {
   refreshToken: string;
-}): Promise<string | false> {
-  // Extract decoded from the verifiedJWT
-  const { decoded } = verifyJwt(refreshToken);
+}) {
+  const hashed = hashToken(refreshToken);
 
-  const sessionId = get(decoded, "session");
+  const session = await Session.findOne({
+    refreshToken: hashed,
+    valid: true,
+  }).lean();
 
-  // If there is not decoded or sessionId, then return
-  if (!decoded || !sessionId) return false;
+  if (!session) throw Errors.unauthorized("Invalid tokens");
 
-  // Find session using sessionId
-  const session = await Session.findById(sessionId).lean();
-
-  // if no session as such return
-  if (!session || !session.valid) return false;
-
-  // Find user with session.user
-  const user = await User.findById(session.user).lean();
+  const user = await User.findById(session.user);
 
   if (!user) return false;
 
+  // Rotate refresh token
+  const newRawRefreshToken = crypto.randomBytes(64).toString("hex");
+
+  session.refreshToken = hashToken(newRawRefreshToken);
+  await session.save();
+
   const accessToken = signJwt(
-    { ...user, session: session._id },
-    { expiresIn: Number(accessTokenTtl) },
+    {
+      sub: user._id,
+      role: user.role,
+      session: session._id,
+    },
+    {
+      expiresIn: accessTokenTtl,
+    },
   );
 
-  return accessToken;
+  return { accessToken, refreshToken: newRawRefreshToken };
 }
