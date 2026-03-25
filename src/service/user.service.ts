@@ -3,10 +3,11 @@ import User, { UserDocument } from "../model/user.model";
 import { CreateUserInput } from "../schema/user.schema";
 import { generateUniqueTenantCode } from "../utils/helper";
 import { Errors } from "../utils/factoryErrors";
+import Tenancy from "../model/tenancy.model";
 
 export async function createUser(input: CreateUserInput) {
   const userData: Partial<UserDocument> = {
-    username: input.username,
+    fullName: input.fullName,
     email: input.email,
     password: input.password,
     role: input.role,
@@ -34,7 +35,8 @@ export async function getCurrentUser(userId: string) {
     .select({
       email: 1,
       role: 1,
-      username: 1,
+      fullName: 1,
+      tenantCode: 1,
       _id: 0,
     })
     .lean();
@@ -42,6 +44,30 @@ export async function getCurrentUser(userId: string) {
   if (!user) throw Errors.forbidden("Invalid credentials");
 
   return user;
+}
+
+export async function getTenantsOfLandlord(landlordId: string) {
+  const user = await User.findById(landlordId).lean();
+
+  if (!user || user.role === "tenant") {
+    throw Errors.badRequest("You cannot perform this action");
+  }
+
+  return await Tenancy.find({ landlordId, isActive: true })
+    .select({
+      tenantId: 1,
+      roomId: 1,
+    })
+    .populate([
+      {
+        path: "tenantId",
+        select: "id fullName tenantCode",
+      },
+      {
+        path: "roomId",
+        select: "id roomLabel",
+      },
+    ]);
 }
 
 export async function deleteUser(userId: string) {

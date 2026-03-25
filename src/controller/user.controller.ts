@@ -3,6 +3,7 @@ import {
   createUser,
   deleteUser,
   getCurrentUser,
+  getTenantsOfLandlord,
 } from "../service/user.service";
 import { TryCatch } from "../utils/tryCatch";
 
@@ -24,6 +25,17 @@ export const getCurrentUserHandler = TryCatch(
     return user;
   },
   "GetCurrentUserHandler",
+);
+
+export const findTenantsOfLandlordHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const landlordId = res.locals.user.sub;
+
+    const tenants = await getTenantsOfLandlord(landlordId);
+
+    return tenants;
+  },
+  "FindTenantsOfLandlordHandler",
 );
 
 export const deleteUserHandler = TryCatch(
