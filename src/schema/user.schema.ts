@@ -3,7 +3,7 @@ import { z } from "zod";
 // Body schema
 const userBody = z
   .object({
-    username: z.string().min(4, "Username must be at least 4 characters"),
+    fullName: z.string().min(4, "FullName must be at least 4 characters"),
     role: z.enum(["tenant", "landlord"]),
     email: z.email(),
     password: z

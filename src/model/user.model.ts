@@ -4,7 +4,7 @@ import argon2 from "argon2";
 
 export interface UserDocument extends Document {
   email: string;
-  username: string;
+  fullName: string;
   password: string;
   role: "tenant" | "landlord";
   tenantCode: string;
@@ -25,7 +25,7 @@ const userSchema = new Schema<UserDocument>(
       trim: true,
       index: true,
     },
-    username: { type: String, required: true },
+    fullName: { type: String, required: true },
     password: {
       type: String,
       required: true,
