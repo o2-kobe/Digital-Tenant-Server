@@ -31,7 +31,11 @@ export const TryCatch =
         data: result,
       });
     } catch (error: any) {
-      logger.error(`[${context}]`, error);
+      logger.error({
+        context,
+        message: error.message,
+        stack: error.stack,
+      });
 
       //AppError (Service / Business errors)
       if (error instanceof AppError) {
@@ -56,7 +60,7 @@ export const TryCatch =
         });
       }
 
-      // 4️⃣ Duplicate Key Error
+      // Duplicate Key Error
       if (error.code === 11000) {
         return res.status(409).json({
           status: "fail",
@@ -64,7 +68,7 @@ export const TryCatch =
         });
       }
 
-      // 5️⃣ JWT Errors
+      // JWT Errors
       if (error.name === "JsonWebTokenError") {
         return res.status(401).json({
           status: "fail",
