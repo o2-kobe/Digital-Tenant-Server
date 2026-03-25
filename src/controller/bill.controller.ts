@@ -6,11 +6,15 @@ import {
   getBillsByTenant,
   markBillAsCompleted,
   updateBill,
+  createBillForRoomsUnderProperty,
+  getBillsForRoom,
 } from "../service/bill.service";
+import { AppError } from "../utils/AppError";
+import logger from "../utils/logger";
 
 export const createBillHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const tenancyId = req.params.id as string;
     const { billType, description, amount, dueDate } = req.body;
 
@@ -26,9 +30,45 @@ export const createBillHandler = TryCatch(
   "CreateBillHandler",
 );
 
+export async function createBillForRoomsUnderPropertyHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const landlordId = res.locals.user.sub;
+    const propertyId = req.params.id as string;
+    const { billType, description, amount, dueDate } = req.body;
+
+    const result = await createBillForRoomsUnderProperty(
+      propertyId,
+      landlordId,
+      { billType, description, amount, dueDate },
+    );
+
+    res.status(201).json({
+      status: "success",
+      message: result,
+    });
+  } catch (error: any) {
+    logger.error(`CreateBillForRoomsUnderPropertyHandler Error: ${error}`);
+
+    if (error instanceof AppError) {
+      return res.status(error.statusCode).json({
+        status: error.status,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong. Please try again later.",
+    });
+  }
+}
+
 export const findBillsByTenancyHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const tenancyId = req.params.id as string;
 
     const bills = await getBillsByTenancy(tenancyId, landlordId);
@@ -40,7 +80,7 @@ export const findBillsByTenancyHandler = TryCatch(
 
 export const findBillsByTenantHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const tenantId = res.locals.user._id;
+    const tenantId = res.locals.user.sub;
 
     const bills = await getBillsByTenant(tenantId);
 
@@ -51,7 +91,7 @@ export const findBillsByTenantHandler = TryCatch(
 
 export const updateBillHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const billId = req.params.id as string;
     const { billType, description, amount, dueDate } = req.body;
 
@@ -69,7 +109,7 @@ export const updateBillHandler = TryCatch(
 
 export const MarkBillAsPaidHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const tenantId = res.locals.user._id;
+    const tenantId = res.locals.user.sub;
     const billId = req.params.id as string;
 
     const paidBill = await markBillAsCompleted(billId, tenantId);
@@ -81,7 +121,7 @@ export const MarkBillAsPaidHandler = TryCatch(
 
 export const completeBillHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const billId = req.params.id as string;
 
     const completedBill = await markBillAsCompleted(billId, landlordId);
@@ -89,4 +129,29 @@ export const completeBillHandler = TryCatch(
     return completedBill;
   },
   "CompleteBillHandler",
+);
+
+export const findBillsForRoomHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const landlordId = res.locals.user.sub;
+    const roomId = req.params.id as string;
+
+    const bills = await getBillsForRoom(roomId, landlordId);
+
+    return bills;
+  },
+  "FindBillsForRoomHandler",
+);
+
+export const findBillsForPropertyHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const landlordId = res.locals.user.sub;
+    const propertyId = req.params.id as string;
+
+    const bills = await getBillsForRoom(propertyId, landlordId);
+
+    return bills;
+  },
+
+  "FindBillsForPropertyHandler",
 );
