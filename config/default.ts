@@ -1,3 +1,11 @@
+import dotenv from "dotenv";
+
+dotenv.config();
+
 export default {
-  saltWorkFactor: 10,
+  port: 5000,
+  accessTokenTtl: "15m",
+  JWT_SECRET: process.env.privateKey,
+  issuer: "digital-server",
+  audience: "landlord-tenants",
 };
