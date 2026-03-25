@@ -20,3 +20,20 @@ export async function generateUniqueTenantCode() {
 
   return code;
 }
+
+export function convertToTitleCase(word: string | undefined) {
+  return (
+    word &&
+    word
+      .split(" ")
+      .map((word) => word.replace(word[0], word[0].toUpperCase()))
+      .join(" ")
+  );
+}
+
+export function normalizeMongoArray<T extends { _id: any }>(docs: T[]) {
+  return docs.map(({ _id, ...rest }) => ({
+    id: _id.toString(),
+    ...rest,
+  }));
+}
