@@ -8,23 +8,20 @@ import {
 } from "../service/session.service";
 import config from "config";
 import logger from "./../utils/logger";
-import { signJwt } from "../utils/jwt.utils";
 import { StringValue } from "ms";
+import { signJwt } from "../utils/jwt.utils";
 
 const accessTokenTtl = config.get<StringValue>("accessTokenTtl");
-const refreshTokenTtl = config.get<StringValue>("refreshTokenTtl");
 
 export async function createSessionHandler(req: Request, res: Response) {
   try {
-    // Validate the user's password
     const { email, password } = req.body;
-    const user = await validatePassword({ email, password });
 
+    const user = await validatePassword({ email, password });
     if (!user) {
       return res.status(401).send("Invalid credentials");
     }
 
-    // Create a session
     const { session, rawRefreshToken } = await createSession(
       String(user._id),
       req.get("user-agent") || "",
@@ -41,14 +38,21 @@ export async function createSessionHandler(req: Request, res: Response) {
     });
 
     const accessToken = signJwt(
-      { sub: user._id, role: user.role, session: session._id },
+      {
+        sub: user._id,
+        role: user.role,
+        session: session._id,
+      },
       { expiresIn: accessTokenTtl },
     );
 
     res.status(200).json({ accessToken });
   } catch (error) {
     logger.error(error);
-    res.status(401).json({ status: "error", message: "Failed to log in" });
+    res.status(401).json({
+      status: "error",
+      message: "Failed to log in",
+    });
   }
 }
 
@@ -97,6 +101,7 @@ export async function refreshAccessTokenHandler(req: Request, res: Response) {
       });
     }
 
+    // Rotate cookie
     res.cookie("refreshToken", result.refreshToken, {
       httpOnly: true,
       secure: false,
@@ -105,7 +110,9 @@ export async function refreshAccessTokenHandler(req: Request, res: Response) {
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
 
-    res.status(200).json({ accessToken: result.accessToken });
+    res.status(200).json({
+      accessToken: result.accessToken,
+    });
   } catch (error) {
     logger.error(error);
     res.status(500).json({

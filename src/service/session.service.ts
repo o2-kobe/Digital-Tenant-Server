@@ -1,8 +1,8 @@
 import { QueryFilter, UpdateQuery } from "mongoose";
 import Session, { Session as SessionDocument } from "../model/session.model";
 import { signJwt } from "../utils/jwt.utils";
-import User from "../model/user.model";
 import { StringValue } from "ms";
+import User from "../model/user.model";
 import config from "config";
 import crypto from "crypto";
 import { Errors } from "../utils/factoryErrors";
@@ -53,12 +53,13 @@ export async function reIssueAccessToken({
   const session = await Session.findOne({
     refreshToken: hashed,
     valid: true,
-  }).lean();
+  });
 
-  if (!session) throw Errors.unauthorized("Invalid tokens");
+  if (!session) {
+    throw Errors.forbidden("Invalid refresh token");
+  }
 
   const user = await User.findById(session.user);
-
   if (!user) return false;
 
   // Rotate refresh token
@@ -73,10 +74,11 @@ export async function reIssueAccessToken({
       role: user.role,
       session: session._id,
     },
-    {
-      expiresIn: accessTokenTtl,
-    },
+    { expiresIn: accessTokenTtl },
   );
 
-  return { accessToken, refreshToken: newRawRefreshToken };
+  return {
+    accessToken,
+    refreshToken: newRawRefreshToken,
+  };
 }
