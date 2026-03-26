@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+const objectId = z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID");
+
+export const billParamsSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+});
+
 // Body schema
 const billBody = z.object({
   billType: z.enum(["rent", "electricity", "water", "other"]),
@@ -21,12 +29,6 @@ export const createBillSchema = z.object({
 
 export const updateBillSchema = z.object({
   body: billBody.partial(),
-  params: z.object({
-    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
-  }),
-});
-
-export const billParamsSchema = z.object({
   params: z.object({
     id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
   }),

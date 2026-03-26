@@ -107,7 +107,7 @@ export const updateBillHandler = TryCatch(
   "UpdateBillHandler",
 );
 
-export const MarkBillAsPaidHandler = TryCatch(
+export const markBillAsPaidHandler = TryCatch(
   async (req: Request, res: Response) => {
     const tenantId = res.locals.user.sub;
     const billId = req.params.id as string;
