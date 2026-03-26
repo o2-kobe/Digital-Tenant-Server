@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const propertyParamsSchema = z.object({
+  params: z.object({
+    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
+  }),
+});
+
 // Body schema only
 const propertyBody = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
@@ -18,12 +24,6 @@ export const createPropertySchema = z.object({
 
 export const updatePropertySchema = z.object({
   body: propertyBody.partial(),
-  params: z.object({
-    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
-  }),
-});
-
-export const propertyParamsSchema = z.object({
   params: z.object({
     id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
   }),

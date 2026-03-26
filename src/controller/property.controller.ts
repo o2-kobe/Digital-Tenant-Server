@@ -10,7 +10,7 @@ import {
 
 export const createPropertyHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const { name, city, town, address } = req.body;
 
     const property = await createProperty(landlordId, {
@@ -30,7 +30,7 @@ export const createPropertyHandler = TryCatch(
 
 export const getAllPropertiesByLanlordHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const properties = await getPropertiesByLandlord(landlordId);
 
     return properties;
@@ -40,7 +40,7 @@ export const getAllPropertiesByLanlordHandler = TryCatch(
 
 export const getOnePropertyByLandlord = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const propertyId = req.params.id as string;
 
     const property = await getPropertyById(propertyId, landlordId);
@@ -62,7 +62,7 @@ export const getOnePropertyHandler = TryCatch(
 export const updatePropertyHandler = TryCatch(
   async (req: Request, res: Response) => {
     const propertyId = req.params.id as string;
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
 
     const { name, city, town, address } = req.body;
 
@@ -81,7 +81,7 @@ export const updatePropertyHandler = TryCatch(
 export const deletePropertyHandler = TryCatch(
   async (req: Request, res: Response) => {
     const propertyId = req.params.id as string;
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
 
     await deleteProperty(propertyId, landlordId);
 
