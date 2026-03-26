@@ -1,60 +1,289 @@
-/* 
-import express from "express";
+import { Request, Response, Router } from "express";
 import {
-  createProperty,
-  updateProperty,
-  getProperty,
-  deleteProperty,
-} from "../controllers/property.controller";
-import validateResource from "../middleware/validateResource";
+  createUserHandler,
+  deleteUserHandler,
+  getCurrentUserHandler,
+} from "./controller/user.controller";
+import {
+  createSessionHandler,
+  deleteSessionHandler,
+  getSessionsHandler,
+  refreshAccessTokenHandler,
+} from "./controller/session.controller";
+import { requireUser } from "./middleware/requireUser";
+import { loginLimiter } from "./middleware/rateLimit";
+import validateResource from "./middleware/validateResource";
+import { createUserSchema } from "./schema/user.schema";
+import { createSessionSchema } from "./schema/session.schema";
+import {
+  createTenancyHandler,
+  endTenancyHandler,
+  findActiveTenanciesByRoomHandler,
+  findOneTenancyHandler,
+} from "./controller/tenancy.controller";
+import {
+  createTenancySchema,
+  tenancyParamsSchema,
+} from "./schema/tenancy.schema";
+import {
+  createRoomSchema,
+  roomParamsSchema,
+  updateRoomSchema,
+} from "./schema/room.schema";
+import {
+  createRoomHandler,
+  deleteRoomHandler,
+  findAllRoomsByPropertyHandler,
+  findOneRoomHandler,
+  getMonthlyRevenueHandler,
+  updateRoomHandler,
+} from "./controller/room.controller";
 import {
   createPropertySchema,
-  updatePropertySchema,
   propertyParamsSchema,
-} from "../schemas/property.schema";
+  updatePropertySchema,
+} from "./schema/property.schema";
+import {
+  createPropertyHandler,
+  deletePropertyHandler,
+  getAllPropertiesByLanlordHandler,
+  getOnePropertyHandler,
+  updatePropertyHandler,
+} from "./controller/property.controller";
+import {
+  billParamsSchema,
+  createBillSchema,
+  updateBillSchema,
+} from "./schema/bill.schema";
+import {
+  completeBillHandler,
+  createBillForRoomsUnderPropertyHandler,
+  createBillHandler,
+  findBillsByTenancyHandler,
+  findBillsForPropertyHandler,
+  findBillsForRoomHandler,
+  markBillAsPaidHandler,
+  updateBillHandler,
+} from "./controller/bill.controller";
+import {
+  announcementParamsSchema,
+  createAnnouncementSchema,
+  updateAnnouncementSchema,
+} from "./schema/announcement.schema";
+import {
+  broadcastAnnouncementHandler,
+  createAnnouncementHandler,
+  deleteAnnouncementHandler,
+  findAnnouncementHandler,
+  findPropertyAnnouncementsHandler,
+  findRoomAnnouncementsHandler,
+  updateAnnouncementHandler,
+} from "./controller/announcement.controller";
 
-const router = express.Router();
+const router = Router();
 
+router.get("/", async (_req: Request, res: Response) => {
+  res.send("Digital Tenant System ...");
+});
+
+// *****************
+// User Routes
+router.post("/users", validateResource(createUserSchema), createUserHandler);
+router.get("/users", requireUser, getCurrentUserHandler);
+router.delete("/users", requireUser, deleteUserHandler);
+
+// *****************
+// Session Routes
 router.post(
-  "/",
-  validateResource(createPropertySchema),
-  createProperty
+  "/sessions",
+  loginLimiter,
+  validateResource(createSessionSchema),
+  createSessionHandler,
 );
 
-router.patch(
-  "/:id",
-  validateResource(updatePropertySchema),
-  updateProperty
+router.get("/sessions", requireUser, getSessionsHandler);
+router.delete("/sessions", requireUser, deleteSessionHandler);
+
+router.post("/sessions/refresh", loginLimiter, refreshAccessTokenHandler);
+
+router.use(requireUser);
+
+// *****************
+// Tenancy Routes
+router.post(
+  "/tenancies/:propertyId/:roomId",
+  validateResource(createTenancySchema),
+  createTenancyHandler,
 );
 
 router.get(
-  "/:id",
-  validateResource(propertyParamsSchema),
-  getProperty
+  "/tenancies/:id",
+  validateResource(tenancyParamsSchema),
+  findOneTenancyHandler,
+);
+
+router.get(
+  "/tenancies/:id/rooms",
+  validateResource(tenancyParamsSchema),
+  findActiveTenanciesByRoomHandler,
+);
+
+router.patch(
+  "/tenancies/:id/endTenancy",
+  validateResource(tenancyParamsSchema),
+  endTenancyHandler,
+);
+
+// *****************
+// Rooms Routes
+router.post(
+  "/rooms/:id",
+  validateResource(createRoomSchema),
+  createRoomHandler,
+);
+
+router.get(
+  "/rooms/:id",
+  validateResource(roomParamsSchema),
+  findOneRoomHandler,
+);
+
+router.get(
+  "/rooms/:id/property",
+  validateResource(roomParamsSchema),
+  findAllRoomsByPropertyHandler,
+);
+
+router.patch(
+  "/rooms/:id",
+  validateResource(updateRoomSchema),
+  updateRoomHandler,
 );
 
 router.delete(
-  "/:id",
-  validateResource(propertyParamsSchema),
-  deleteProperty
+  "/rooms/:id",
+  validateResource(roomParamsSchema),
+  deleteRoomHandler,
 );
 
-export default router;
+router.get("/rooms/getMonthlyRevenue", getMonthlyRevenueHandler);
 
-import express from "express";
-import { createTenancyHandler } from "../controllers/tenancy.controller";
-import validateResource from "../middleware/validateResource";
-import { createTenancyParamsSchema } from "../schemas/tenancy.schema";
+// *****************
+// Property Routes
+router.post(
+  "/properties",
+  validateResource(createPropertySchema),
+  createPropertyHandler,
+);
 
-const router = express.Router();
+router.get("/properties", getAllPropertiesByLanlordHandler);
+
+router.get(
+  "/properties/:id",
+  validateResource(propertyParamsSchema),
+  getOnePropertyHandler,
+);
+
+router.patch(
+  "/properties/:id",
+  validateResource(updatePropertySchema),
+  updatePropertyHandler,
+);
+
+router.delete(
+  "/properties/:id",
+  validateResource(propertyParamsSchema),
+  deletePropertyHandler,
+);
+
+// *****************
+// Bill Routes
+router.post(
+  "/bills/:id",
+  validateResource(createBillSchema),
+  createBillHandler,
+);
 
 router.post(
-  "/properties/:propertyId/rooms/:roomId/tenancies",
-  validateResource(createTenancyParamsSchema),
-  createTenancyHandler
+  "/bills/:id/broadcast",
+  validateResource(createBillSchema),
+  createBillForRoomsUnderPropertyHandler,
+);
+
+// Find Bills by property
+router.get(
+  "/bills/:id/property",
+  validateResource(billParamsSchema),
+  findBillsForPropertyHandler,
+);
+
+router.get(
+  "/bills/:id/room",
+  validateResource(billParamsSchema),
+  findBillsForRoomHandler,
+);
+
+router.patch(
+  "/bills/:id",
+  validateResource(updateBillSchema),
+  updateBillHandler,
+);
+
+router.patch(
+  "/bills/:id/completed",
+  validateResource(billParamsSchema),
+  completeBillHandler,
+);
+
+router.patch(
+  "/bills/:id/paid",
+  validateResource(billParamsSchema),
+  markBillAsPaidHandler,
+);
+
+// *****************
+// Announcement Routes
+
+// requires tenancyId
+router.post(
+  "/announcements/:id",
+  validateResource(createAnnouncementSchema),
+  createAnnouncementHandler,
+);
+
+router.post(
+  "/announcements/:id/broadcast",
+  validateResource(createAnnouncementSchema),
+  broadcastAnnouncementHandler,
+);
+
+router.get(
+  "/announcements/:id",
+  validateResource(announcementParamsSchema),
+  findAnnouncementHandler,
+);
+router.get(
+  "/announcements/:id/room",
+  validateResource(announcementParamsSchema),
+  findRoomAnnouncementsHandler,
+);
+
+router.get(
+  "/announcements/:id/property",
+  validateResource(announcementParamsSchema),
+  findPropertyAnnouncementsHandler,
+);
+
+router.patch(
+  "/announcements/:id",
+  validateResource(updateAnnouncementSchema),
+  updateAnnouncementHandler,
+);
+
+router.delete(
+  "/announcements/:id",
+  validateResource(announcementParamsSchema),
+  deleteAnnouncementHandler,
 );
 
 export default router;
-
-
-*/
