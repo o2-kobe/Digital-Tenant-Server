@@ -3,14 +3,14 @@ import { TryCatch } from "../utils/tryCatch";
 import {
   createTenancy,
   endTenancy,
-  getActiveTenancyByRoom,
+  getTenanciesByRoom,
   getTenancyById,
 } from "../service/tenancy.service";
 import { CreateTenancyControllerInput } from "../schema/tenancy.schema";
 
 export const createTenancyHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const { propertyId, roomId } = (
       req as unknown as CreateTenancyControllerInput
     ).params;
@@ -32,22 +32,22 @@ export const createTenancyHandler = TryCatch(
   "CreateTenancyHandler",
 );
 
-export const findActiveTenancyByRoomHandler = TryCatch(
+export const findActiveTenanciesByRoomHandler = TryCatch(
   async (req: Request, res: Response) => {
+    const landlordId = res.locals.user.sub;
     const roomId = req.params.id as string;
-    const landlordId = res.locals.user._id;
 
-    const activeTenancy = await getActiveTenancyByRoom(roomId, landlordId);
+    const tenancies = await getTenanciesByRoom(roomId, landlordId);
 
-    return activeTenancy;
+    return tenancies;
   },
-  "FindActiveTenancyByRoomHandler",
+  "FindActiveTenanciesByRoomHandler",
 );
 
 export const findOneTenancyHandler = TryCatch(
   async (req: Request, res: Response) => {
     const tenancyId = req.params.id as string;
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
 
     const tenancy = await getTenancyById(tenancyId, landlordId);
 
@@ -59,7 +59,7 @@ export const findOneTenancyHandler = TryCatch(
 export const endTenancyHandler = TryCatch(
   async (req: Request, res: Response) => {
     const tenancyId = req.params.id as string;
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
 
     const endedTenancy = await endTenancy(tenancyId, landlordId);
 
