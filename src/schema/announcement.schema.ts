@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+const objectId = z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID");
+
+export const announcementParamsSchema = z.object({
+  params: z.object({
+    id: objectId,
+  }),
+});
+
 // Body schema
 const announcementBody = z.object({
   title: z
@@ -18,18 +26,12 @@ const announcementBody = z.object({
 export const createAnnouncementSchema = z.object({
   body: announcementBody,
   params: z.object({
-    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
+    id: objectId,
   }),
 });
 
 export const updateAnnouncementSchema = z.object({
   body: announcementBody.partial(),
-  params: z.object({
-    id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
-  }),
-});
-
-export const announcementParamsSchema = z.object({
   params: z.object({
     id: z.string().regex(/^[0-9a-f]{24}$/, "Invalid MongoDB ID"),
   }),

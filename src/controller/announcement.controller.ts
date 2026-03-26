@@ -84,7 +84,10 @@ export const deleteAnnouncementHandler = TryCatch(
       landlordId,
     );
 
-    return deletedAnnouncement;
+    return {
+      status: 204,
+      data: null,
+    };
   },
   "DeleteAnnouncementHandler",
 );
@@ -136,7 +139,7 @@ export const findRoomAnnouncementsHandler = TryCatch(
   "FindRoomAnnouncementsHandler",
 );
 
-export const findPropertyAnnouncements = TryCatch(
+export const findPropertyAnnouncementsHandler = TryCatch(
   async (req: Request, res: Response) => {
     const landlordId = res.locals.user.sub;
     const propertyId = req.params.id as string;
@@ -145,6 +148,8 @@ export const findPropertyAnnouncements = TryCatch(
       landlordId,
       propertyId,
     );
+
+    return announcements;
   },
   "FindPropertyAnnouncementsHandler",
 );
