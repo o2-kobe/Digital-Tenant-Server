@@ -5,7 +5,6 @@ export interface PropertyDocument extends Document {
   name: string;
   city: string;
   town: string;
-  image: string;
   address: string;
 
   createdAt: Date;
@@ -22,8 +21,7 @@ const propertySchema = new Schema<PropertyDocument>(
     name: { type: String, required: true, minLength: 3 },
     city: { type: String, required: true, minLength: 3 },
     town: { type: String, required: true, minLength: 3 },
-    image: { type: String, required: true, minLength: 3 },
-    address: { type: String, required: true, minLength: 3 }, //make this optional
+    address: { type: String, required: true, minLength: 3 },
   },
   {
     timestamps: true,
