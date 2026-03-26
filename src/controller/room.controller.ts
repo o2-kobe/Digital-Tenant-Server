@@ -3,6 +3,7 @@ import { TryCatch } from "../utils/tryCatch";
 import {
   createRoom,
   deleteRoom,
+  getMonthlyRevenue,
   getRoomById,
   getRoomsByProperty,
   updateRoom,
@@ -10,13 +11,16 @@ import {
 
 export const createRoomHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const propertyId = req.params.id as string;
-    const { roomLabel, rentAmount } = req.body;
+    const { roomLabel, rentAmount, type, bedrooms, amenities } = req.body;
 
     const room = await createRoom(landlordId, propertyId, {
       roomLabel,
       rentAmount,
+      type,
+      bedrooms,
+      amenities,
     });
 
     return {
@@ -29,7 +33,7 @@ export const createRoomHandler = TryCatch(
 
 export const findAllRoomsByPropertyHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const propertyId = req.params.id as string;
 
     const rooms = await getRoomsByProperty(landlordId, propertyId);
@@ -41,7 +45,7 @@ export const findAllRoomsByPropertyHandler = TryCatch(
 
 export const findOneRoomHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const roomId = req.params.id as string;
 
     const room = await getRoomById(landlordId, roomId);
@@ -53,24 +57,27 @@ export const findOneRoomHandler = TryCatch(
 
 export const updateRoomHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const roomId = req.params.id as string;
 
-    const { roomLabel, rentAmount } = req.body;
+    const { roomLabel, rentAmount, type, bedrooms, amenities } = req.body;
 
     const updatedRoom = await updateRoom(landlordId, roomId, {
       roomLabel,
       rentAmount,
+      type,
+      bedrooms,
+      amenities,
     });
 
     return updatedRoom;
   },
-  "",
+  "UpdateRoomHandler",
 );
 
 export const deleteRoomHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
     const roomId = req.params.id as string;
 
     await deleteRoom(landlordId, roomId);
@@ -79,5 +86,16 @@ export const deleteRoomHandler = TryCatch(
       data: null,
     };
   },
-  "",
+  "DeleteRoomHandler",
+);
+
+export const getMonthlyRevenueHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const landlordId = res.locals.user.sub;
+
+    const monthlyRevenue = await getMonthlyRevenue(landlordId);
+
+    return monthlyRevenue;
+  },
+  "GetMonthlyRevenueHandler",
 );
