@@ -53,7 +53,10 @@ export async function getRoomsByProperty(
 
 //  * Get a room by ID (ownership enforced via property)
 export async function getRoomById(landlordId: string, roomId: string) {
-  const room = await Room.findById(roomId);
+  const room = await Room.findById(roomId).populate({
+    path: "propertyId",
+    select: "id name",
+  });
 
   if (!room) {
     throw Errors.notFound("Room does not exist");
