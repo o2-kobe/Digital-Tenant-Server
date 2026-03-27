@@ -4,7 +4,7 @@ import routes from "./routes";
 import cors from "cors";
 import config from "config";
 import logger from "./utils/logger";
-import { connect } from "./utils/connect";
+import connect from "./utils/connect";
 
 const PORT = config.get<number>("port");
 const app = express();
