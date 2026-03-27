@@ -11,6 +11,7 @@ export async function createUser(input: CreateUserInput) {
     email: input.email,
     password: input.password,
     role: input.role,
+    phoneNumber: input.phoneNumber,
   };
 
   if (input.role === "tenant") {
@@ -37,6 +38,7 @@ export async function getCurrentUser(userId: string) {
       role: 1,
       fullName: 1,
       tenantCode: 1,
+      phoneNumber: 1,
       _id: 0,
     })
     .lean();
@@ -46,7 +48,7 @@ export async function getCurrentUser(userId: string) {
   return user;
 }
 
-export async function getTenantsOfLandlord(landlordId: string) {
+export async function getActiveTenantsOfLandlord(landlordId: string) {
   const user = await User.findById(landlordId).lean();
 
   if (!user || user.role === "tenant") {
@@ -57,15 +59,20 @@ export async function getTenantsOfLandlord(landlordId: string) {
     .select({
       tenantId: 1,
       roomId: 1,
+      property: 1,
     })
     .populate([
       {
         path: "tenantId",
-        select: "id fullName tenantCode",
+        select: "id fullName tenantCode phoneNumber",
       },
       {
         path: "roomId",
         select: "id roomLabel",
+      },
+      {
+        path: "propertyId",
+        select: "id name",
       },
     ]);
 }

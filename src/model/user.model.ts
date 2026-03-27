@@ -9,6 +9,8 @@ export interface UserDocument extends Document {
   role: "tenant" | "landlord";
   tenantCode: string;
 
+  phoneNumber: string;
+
   comparePassword: (candidatePassword: string) => Promise<boolean>;
 
   createdAt: Date;
@@ -44,6 +46,7 @@ const userSchema = new Schema<UserDocument>(
       sparse: true, //  allows landlords to have null
       index: true,
     },
+    phoneNumber: { type: String, length: 10 },
   },
   {
     timestamps: true,

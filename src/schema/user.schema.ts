@@ -11,6 +11,7 @@ const userBody = z
       .min(8, "Password must be at least 8 characters")
       .max(64, "Password cannot exceed 64 characters"),
     passwordConfirm: z.string(),
+    phoneNumber: z.string().regex(/^\d{10}$/),
   })
   .refine((data) => data.password === data.passwordConfirm, {
     message: "Passwords do not match",
