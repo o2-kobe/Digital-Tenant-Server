@@ -8,6 +8,8 @@ import {
   updateBill,
   createBillForRoomsUnderProperty,
   getBillsForRoom,
+  getPendingPayments,
+  getBillsOfProperty,
 } from "../service/bill.service";
 import { AppError } from "../utils/AppError";
 import logger from "../utils/logger";
@@ -15,10 +17,10 @@ import logger from "../utils/logger";
 export const createBillHandler = TryCatch(
   async (req: Request, res: Response) => {
     const landlordId = res.locals.user.sub;
-    const tenancyId = req.params.id as string;
+    const roomId = req.params.id as string;
     const { billType, description, amount, dueDate } = req.body;
 
-    const bill = await createBill(tenancyId, landlordId, {
+    const bill = await createBill(roomId, landlordId, {
       billType,
       description,
       amount,
@@ -40,8 +42,8 @@ export async function createBillForRoomsUnderPropertyHandler(
     const { billType, description, amount, dueDate } = req.body;
 
     const result = await createBillForRoomsUnderProperty(
-      propertyId,
       landlordId,
+      propertyId,
       { billType, description, amount, dueDate },
     );
 
@@ -148,10 +150,21 @@ export const findBillsForPropertyHandler = TryCatch(
     const landlordId = res.locals.user.sub;
     const propertyId = req.params.id as string;
 
-    const bills = await getBillsForRoom(propertyId, landlordId);
+    const bills = await getBillsOfProperty(landlordId, propertyId);
 
     return bills;
   },
 
   "FindBillsForPropertyHandler",
+);
+
+export const findPendingPaymentsHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const landlordId = await res.locals.user.sub;
+
+    const pendingPayments = await getPendingPayments(landlordId);
+
+    return pendingPayments?.length;
+  },
+  "FindPendingPaymentsHandler",
 );

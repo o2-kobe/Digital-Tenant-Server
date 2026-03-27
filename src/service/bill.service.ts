@@ -6,69 +6,53 @@ import { CreateBillInput, UpdateBillInput } from "../schema/bill.schema";
 import { Errors } from "../utils/factoryErrors";
 import { convertToTitleCase } from "../utils/helper";
 
+// Create Bill
 export async function createBill(
-  tenancyId: string,
+  roomId: string,
   landlordId: string,
   billData: CreateBillInput,
 ) {
-  const session = await mongoose.startSession();
+  // Find active tenancy
+  const tenancy = await Tenancy.findOne({
+    roomId,
+    landlordId,
+    isActive: true,
+  });
 
-  try {
-    let createdBill;
-
-    await session.withTransaction(async () => {
-      const tenancy = await Tenancy.findOne({
-        _id: tenancyId,
-        landlordId,
-        isActive: true,
-      }).session(session);
-
-      if (!tenancy) {
-        throw Errors.notFound(
-          "The specified tenancy was not found or you do not have access to it.",
-        );
-      }
-
-      // Prevent duplicate bills (same type + same due date)
-      const existingBill = await Bill.findOne({
-        tenancyId,
-        billType: billData.billType,
-        dueDate: billData.dueDate,
-      }).session(session);
-
-      if (existingBill) {
-        throw Errors.badRequest(
-          "A bill of this type already exists for the specified due date.",
-        );
-      }
-
-      createdBill = await Bill.create(
-        [
-          {
-            ...billData,
-            tenancyId,
-            status: "pending",
-          },
-        ],
-        { session },
-      );
-
-      await Announcement.create(
-        [
-          {
-            tenancyId,
-            title: `New Bill: ${convertToTitleCase(billData.billType)}`,
-            message: `A new ${billData.billType} bill of ${billData.amount} is due on ${billData.dueDate}`,
-          },
-        ],
-        { session },
-      );
-    });
-
-    return createdBill?.[0];
-  } finally {
-    session.endSession();
+  if (!tenancy) {
+    throw Errors.notFound(
+      "No active tenancy found for this room. A bill can only be created for occupied rooms.",
+    );
   }
+
+  // Prevent duplicate bill
+  const existingBill = await Bill.findOne({
+    tenancyId: tenancy._id,
+    billType: billData.billType,
+    dueDate: billData.dueDate,
+  });
+
+  if (existingBill) {
+    throw Errors.badRequest(
+      "A bill of this type already exists for the specified due date for this room.",
+    );
+  }
+
+  // Create bill
+  const createdBill = await Bill.create({
+    ...billData,
+    tenancyId: tenancy._id,
+    status: "pending",
+  });
+
+  // Create announcement
+  await Announcement.create({
+    tenancyId: tenancy._id,
+    title: `New Bill: ${convertToTitleCase(billData.billType)}`,
+    message: `A new ${billData.billType} bill of ₦${billData.amount} for ${billData.description} is due on ${billData.dueDate}`,
+  });
+
+  return createdBill;
 }
 
 // Create Bill for Rooms under Property
@@ -77,66 +61,55 @@ export async function createBillForRoomsUnderProperty(
   propertyId: string,
   data: CreateBillInput,
 ) {
-  const session = await mongoose.startSession();
+  const tenancies = await Tenancy.find({
+    propertyId,
+    landlordId,
+    isActive: true,
+  });
 
-  try {
-    let result;
-
-    await session.withTransaction(async () => {
-      const tenancies = await Tenancy.find({
-        propertyId,
-        landlordId,
-        isActive: true,
-      }).session(session);
-
-      if (!tenancies.length) {
-        throw Errors.badRequest(
-          "No active tenancies were found for this property.",
-        );
-      }
-
-      const tenancyIds = tenancies.map((t) => t._id);
-
-      // Prevent duplicates across all tenancies
-      const existingBills = await Bill.find({
-        tenancyId: { $in: tenancyIds },
-        billType: data.billType,
-        dueDate: data.dueDate,
-      }).session(session);
-
-      if (existingBills.length) {
-        throw Errors.badRequest(
-          "One or more tenants already have this bill for the specified due date.",
-        );
-      }
-
-      const bills = tenancies.map((tenancy) => ({
-        tenancyId: tenancy._id,
-        billType: data.billType,
-        description: data.description,
-        amount: data.amount,
-        dueDate: data.dueDate,
-        status: "pending",
-      }));
-
-      const announcements = tenancies.map((tenancy) => ({
-        tenancyId: tenancy._id,
-        title: `New Bill: ${convertToTitleCase(data.billType)}`,
-        message: `A new ${data.billType} bill of ${data.amount} is due on ${data.dueDate}`,
-      }));
-
-      await Promise.all([
-        Bill.insertMany(bills, { session }),
-        Announcement.insertMany(announcements, { session }),
-      ]);
-
-      return {
-        message: `Bills successfully created for ${tenancies.length} tenant(s).`,
-      };
-    });
-  } finally {
-    session.endSession();
+  if (!tenancies.length) {
+    throw Errors.badRequest(
+      "No active tenancies were found for this property.",
+    );
   }
+
+  const tenancyIds = tenancies.map((t) => t._id);
+
+  // Prevent duplicates across all tenancies
+  const existingBills = await Bill.find({
+    tenancyId: { $in: tenancyIds },
+    billType: data.billType,
+    dueDate: data.dueDate,
+  });
+
+  if (existingBills.length) {
+    throw Errors.badRequest(
+      "One or more tenants already have this bill for the specified due date.",
+    );
+  }
+
+  const bills = tenancies.map((tenancy) => ({
+    tenancyId: tenancy._id,
+    billType: data.billType,
+    description: data.description,
+    amount: data.amount,
+    dueDate: data.dueDate,
+    status: "pending",
+  }));
+
+  const announcements = tenancies.map((tenancy) => ({
+    tenancyId: tenancy._id,
+    title: `New Bill: ${convertToTitleCase(data.billType)}`,
+    message: `A new ${data.billType} bill of ₦${data.amount} for ${data.description} is due on ${data.dueDate}`,
+  }));
+
+  // Execute writes
+  await Bill.insertMany(bills);
+  await Announcement.insertMany(announcements);
+
+  return {
+    message: `Bills successfully created for ${tenancies.length} tenant(s).`,
+  };
 }
 
 // Get Bills By Tenancy
@@ -157,9 +130,6 @@ export async function getBillsByTenant(tenantId: string) {
     tenantId,
     isActive: true,
   }).lean();
-
-  if (!tenancies.length)
-    throw Errors.notFound("No active tenancies were found for this tenant.");
 
   return await Bill.find({
     tenancyId: { $in: tenancies.map((t) => t._id) },
@@ -276,10 +246,16 @@ export async function getBillsForRoom(roomId: string, landlordId: string) {
     isActive: true,
   });
 
-  if (!tenancy)
-    throw Errors.notFound("No active tenancy was found for this room.");
+  if (!tenancy) return [];
 
-  return await Bill.find({ tenancyId: tenancy._id });
+  return await Bill.find({ tenancyId: tenancy._id }).populate({
+    path: "tenancyId",
+    select: "tenantId",
+    populate: {
+      path: "tenantId",
+      select: "fullName",
+    },
+  });
 }
 
 // Get Bills of Property
@@ -292,37 +268,30 @@ export async function getBillsOfProperty(
     propertyId,
   }).select("_id");
 
-  if (!tenancies.length) {
-    throw Errors.notFound("No tenancies were found for this property.");
-  }
-
   const tenancyIds = tenancies.map((t) => t._id);
 
-  const bills = await Bill.aggregate([
-    {
-      $match: {
-        tenancyId: { $in: tenancyIds },
+  const bills = await Bill.find({
+    tenancyId: { $in: tenancyIds },
+  })
+    .populate({
+      path: "tenancyId",
+      select: "tenantId",
+      populate: {
+        path: "tenantId",
+        select: "fullName",
       },
-    },
-    {
-      // Group by "unique bill identity"
-      $group: {
-        _id: {
-          billType: "$billType",
-          amount: "$amount",
-          dueDate: "$dueDate",
-          description: "$description",
-        },
-        bill: { $first: "$$ROOT" }, // pick one representative
-      },
-    },
-    {
-      $replaceRoot: { newRoot: "$bill" },
-    },
-    {
-      $sort: { dueDate: -1 },
-    },
-  ]);
+    })
+    .sort({ dueDate: -1 });
 
   return bills;
+}
+
+export async function getPendingPayments(landlordId: string) {
+  const activeTenancies = await Tenancy.find({ landlordId, isActive: true });
+
+  if (!activeTenancies) return [];
+
+  const tenancyIds = activeTenancies.map((t) => t._id);
+
+  return await Bill.find({ tenancyId: { $in: tenancyIds }, status: "pending" });
 }
