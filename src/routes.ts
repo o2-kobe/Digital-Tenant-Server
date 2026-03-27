@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import {
   createUserHandler,
   deleteUserHandler,
+  findActiveTenantsOfLandlordHandler,
   getCurrentUserHandler,
 } from "./controller/user.controller";
 import {
@@ -62,6 +63,7 @@ import {
   findBillsByTenancyHandler,
   findBillsForPropertyHandler,
   findBillsForRoomHandler,
+  findPendingPaymentsHandler,
   markBillAsPaidHandler,
   updateBillHandler,
 } from "./controller/bill.controller";
@@ -91,6 +93,7 @@ router.get("/", async (_req: Request, res: Response) => {
 router.post("/users", validateResource(createUserSchema), createUserHandler);
 router.get("/users", requireUser, getCurrentUserHandler);
 router.delete("/users", requireUser, deleteUserHandler);
+router.get("/active-tenants", requireUser, findActiveTenantsOfLandlordHandler);
 
 // *****************
 // Session Routes
@@ -166,7 +169,7 @@ router.delete(
   deleteRoomHandler,
 );
 
-router.get("/rooms/getMonthlyRevenue", getMonthlyRevenueHandler);
+router.get("/getMonthlyRevenue", getMonthlyRevenueHandler);
 
 // *****************
 // Property Routes
@@ -222,6 +225,8 @@ router.get(
   validateResource(billParamsSchema),
   findBillsForRoomHandler,
 );
+
+router.get("/pendingPayments", findPendingPaymentsHandler);
 
 router.patch(
   "/bills/:id",
