@@ -16,11 +16,11 @@ import { AppError } from "../utils/AppError";
 export const createAnnouncementHandler = TryCatch(
   async (req: Request, res: Response) => {
     const landlordId = res.locals.user.sub;
-    const tenancyId = req.params.id as string;
+    const roomId = req.params.id as string;
 
     const { title, message } = req.body;
 
-    const announcement = await createAnnouncement(tenancyId, landlordId, {
+    const announcement = await createAnnouncement(roomId, landlordId, {
       title,
       message,
     });

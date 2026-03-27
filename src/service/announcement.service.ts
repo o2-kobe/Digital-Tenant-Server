@@ -9,26 +9,31 @@ import {
   UpdateAnnouncementInput,
 } from "../schema/announcement.schema";
 import { Errors } from "../utils/factoryErrors";
+import { normalizeMongoArray } from "../utils/helper";
 
 // Create Announcement
 export async function createAnnouncement(
-  tenancyId: string,
+  roomId: string,
   landlordId: string,
   announcementData: CreateAnnouncementInput,
 ) {
-  // Verify tenancy
+  // Find active tenancy for the room
   const tenancy = await Tenancy.findOne({
-    _id: tenancyId,
+    roomId,
     landlordId,
     isActive: true,
   }).lean();
 
-  if (!tenancy)
-    throw Errors.forbidden(
-      "You are not authorized to create an announcement for this tenancy.",
+  if (!tenancy) {
+    throw Errors.notFound(
+      "No active tenancy found for this room. Announcements can only be sent to occupied rooms.",
     );
+  }
 
-  return await Announcement.create({ tenancyId, ...announcementData });
+  return await Announcement.create({
+    tenancyId: tenancy._id,
+    ...announcementData,
+  });
 }
 
 // Get Announcements By Tenancy
@@ -176,69 +181,52 @@ export async function broadcastAnnouncement(
   landlordId: string,
   announcementData: CreateAnnouncementInput,
 ) {
-  const session = await mongoose.startSession();
+  // Verify property ownership
+  const property = await Property.findOne({
+    _id: propertyId,
+    landlordId,
+  }).lean();
 
-  try {
-    session.startTransaction();
-
-    // Verify property ownership
-    const property = await Property.findOne({
-      _id: propertyId,
-      landlordId,
-    })
-      .session(session)
-      .lean();
-
-    if (!property) {
-      throw Errors.forbidden(
-        "You are not authorized to send announcements for this property.",
-      );
-    }
-
-    // Get all rooms under property
-    const rooms = await Room.find({ propertyId }).session(session).lean();
-
-    if (!rooms.length) {
-      throw Errors.notFound("No rooms were found under this property.");
-    }
-
-    const roomIds = rooms.map((room) => room._id);
-
-    //  Get all active tenancies
-    const tenancies = await Tenancy.find({
-      roomId: { $in: roomIds },
-      isActive: true,
-    })
-      .session(session)
-      .lean();
-
-    if (!tenancies.length) {
-      throw Errors.notFound(
-        "There are no active tenants to receive this announcement.",
-      );
-    }
-
-    // Prepare announcements
-    const announcements = tenancies.map((tenancy) => ({
-      tenancyId: tenancy._id,
-      title: announcementData.title,
-      message: announcementData.message,
-    }));
-
-    // Bulk insert
-    await Announcement.insertMany(announcements, { session });
-
-    await session.commitTransaction();
-
-    return {
-      message: `Announcement successfully sent to ${announcements.length} tenant(s).`,
-    };
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
+  if (!property) {
+    throw Errors.forbidden(
+      "You are not authorized to send announcements for this property.",
+    );
   }
+
+  // Get all rooms under property
+  const rooms = await Room.find({ propertyId }).lean();
+
+  if (!rooms.length) {
+    throw Errors.notFound("No rooms were found under this property.");
+  }
+
+  const roomIds = rooms.map((room) => room._id);
+
+  // Get all active tenancies
+  const tenancies = await Tenancy.find({
+    roomId: { $in: roomIds },
+    isActive: true,
+  }).lean();
+
+  if (!tenancies.length) {
+    throw Errors.notFound(
+      "There are no active tenants to receive this announcement.",
+    );
+  }
+
+  // Prepare announcements
+  const announcements = tenancies.map((tenancy) => ({
+    tenancyId: tenancy._id,
+    title: announcementData.title,
+    message: announcementData.message,
+  }));
+
+  // Bulk insert
+  await Announcement.insertMany(announcements);
+
+  return {
+    message: `Announcement successfully sent to ${announcements.length} tenant(s).`,
+  };
 }
 
 // Get Announcements for Room
@@ -248,10 +236,16 @@ export async function getAnnouncementsForRoom(
 ) {
   const tenancy = await Tenancy.findOne({ roomId, landlordId, isActive: true });
 
-  if (!tenancy)
-    throw Errors.notFound("No active tenancy was found for this room.");
+  if (!tenancy) return [];
 
-  return await Announcement.find({ tenancyId: tenancy._id });
+  return await Announcement.find({ tenancyId: tenancy._id }).populate({
+    path: "tenancyId",
+    select: "roomId",
+    populate: {
+      path: "roomId",
+      select: "roomLabel",
+    },
+  });
 }
 
 // Get Announcements for property
@@ -264,10 +258,6 @@ export async function getAnnouncementOfProperty(
     propertyId,
   }).select("_id");
 
-  if (!tenancies.length) {
-    throw Errors.notFound("No tenancies were found for this property.");
-  }
-
   const tenancyIds = tenancies.map((t) => t._id);
 
   const announcements = await Announcement.aggregate([
@@ -276,8 +266,56 @@ export async function getAnnouncementOfProperty(
         tenancyId: { $in: tenancyIds },
       },
     },
+
+    // ✅ Join Tenancy
     {
-      // Group by "unique announcement identity"
+      $lookup: {
+        from: "tenancies", // ⚠️ confirm collection name
+        localField: "tenancyId",
+        foreignField: "_id",
+        as: "tenancy",
+      },
+    },
+    {
+      $unwind: {
+        path: "$tenancy",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    // ✅ Join Room via tenancy.roomId
+    {
+      $lookup: {
+        from: "rooms", // ⚠️ confirm collection name
+        localField: "tenancy.roomId",
+        foreignField: "_id",
+        as: "room",
+      },
+    },
+    {
+      $unwind: {
+        path: "$room",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+
+    // ✅ Add roomLabel field
+    {
+      $addFields: {
+        roomLabel: "$room.roomLabel",
+      },
+    },
+
+    // (optional cleanup)
+    {
+      $project: {
+        tenancy: 0,
+        room: 0,
+      },
+    },
+
+    // Your grouping logic
+    {
       $group: {
         _id: {
           title: "$title",
@@ -289,10 +327,11 @@ export async function getAnnouncementOfProperty(
     {
       $replaceRoot: { newRoot: "$announcement" },
     },
+
     {
       $sort: { createdAt: -1 },
     },
   ]);
 
-  return announcements;
+  return normalizeMongoArray(announcements);
 }
