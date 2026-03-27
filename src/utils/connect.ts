@@ -1,13 +1,16 @@
 import mongoose from "mongoose";
-import config from "config";
 import logger from "./logger";
 
-const dbUri = config.get<string>("dbUri");
-
-export async function connect() {
+const connectDB = async () => {
   try {
-    await mongoose.connect(dbUri);
-  } catch (error) {
-    logger.error("Failed to connect to db");
+    const uri = "mongodb://127.0.0.1:27017/Digital-Tenant-Landlord";
+
+    await mongoose.connect(uri);
+    console.log("✅ MongoDB Local Connected");
+  } catch (error: any) {
+    logger.error("MongoDB Connection Error:", error);
+    process.exit(1);
   }
-}
+};
+
+export default connectDB;
