@@ -295,3 +295,25 @@ export async function getPendingPayments(landlordId: string) {
 
   return await Bill.find({ tenancyId: { $in: tenancyIds }, status: "pending" });
 }
+
+export async function getTenantBills(tenantId: string) {
+  const tenancyIds = await Tenancy.find({
+    tenantId,
+    isActive: true,
+  }).distinct("_id");
+
+  if (!tenancyIds.length) return [];
+
+  return await Bill.find({ tenancyId: { $in: tenancyIds } })
+    .sort({
+      createdAt: -1,
+    })
+    .populate({
+      path: "tenancyId",
+      select: "roomId landlordId",
+      populate: {
+        path: "roomId",
+        select: "roomLabel",
+      },
+    });
+}

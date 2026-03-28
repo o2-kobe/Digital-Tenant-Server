@@ -10,6 +10,8 @@ import {
   getBillsForRoom,
   getPendingPayments,
   getBillsOfProperty,
+  getTenantBills,
+  markBillAsPaid,
 } from "../service/bill.service";
 import { AppError } from "../utils/AppError";
 import logger from "../utils/logger";
@@ -114,7 +116,7 @@ export const markBillAsPaidHandler = TryCatch(
     const tenantId = res.locals.user.sub;
     const billId = req.params.id as string;
 
-    const paidBill = await markBillAsCompleted(billId, tenantId);
+    const paidBill = await markBillAsPaid(billId, tenantId);
 
     return paidBill;
   },
@@ -167,4 +169,15 @@ export const findPendingPaymentsHandler = TryCatch(
     return pendingPayments?.length;
   },
   "FindPendingPaymentsHandler",
+);
+
+export const findTenantBillsHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const tenantId = res.locals.user.sub;
+
+    const bills = await getTenantBills(tenantId);
+
+    return bills;
+  },
+  "FindTenantBillsHandler",
 );
