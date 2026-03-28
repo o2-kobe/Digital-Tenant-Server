@@ -1,11 +1,14 @@
 import { Document, model, Schema, Types } from "mongoose";
 
+export type BookingStatus = "requested" | "approved" | "rejected";
+
 export interface BookingDocument extends Document {
   roomId: Types.ObjectId;
-  fullName: string;
-  contactInfo: string;
+  tenantId: Types.ObjectId;
+  propertyId: Types.ObjectId;
 
-  status: "requested" | "approved" | "rejected";
+  status: BookingStatus;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,16 +20,29 @@ const bookingSchema = new Schema<BookingDocument>(
       ref: "Room",
       required: true,
     },
-    fullName: { type: String, minLength: 5 },
-    contactInfo: { type: String, minLength: 10 },
-    status: { type: String, enum: ["requested", "approved", "rejected"] },
+
+    propertyId: {
+      type: Schema.Types.ObjectId,
+      ref: "Property",
+      required: true,
+    },
+
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    status: {
+      type: String,
+      enum: ["requested", "approved", "rejected"],
+      default: "requested",
+    },
   },
   {
     timestamps: true,
   },
 );
 
-// Create index for booking
 bookingSchema.index({ roomId: 1, status: 1 });
 
 bookingSchema.set("toJSON", {

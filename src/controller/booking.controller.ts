@@ -1,19 +1,16 @@
 import { Request, Response } from "express";
 import { TryCatch } from "../utils/tryCatch";
 import {
-  approveBooking,
   createBooking,
-  getBookingsByLandlord,
-  getBookingsByRoom,
-  rejectBooking,
+  getBookingsForLandlordProperties,
 } from "../service/booking.service";
 
 export const createBookingHandler = TryCatch(
   async (req: Request, res: Response) => {
+    const tenantId = res.locals.user.sub;
     const roomId = req.params.id as string;
-    const { fullName, contactInfo } = req.body;
 
-    const booking = await createBooking(roomId, { fullName, contactInfo });
+    const booking = await createBooking(roomId, tenantId);
 
     return {
       status: 201,
@@ -23,48 +20,13 @@ export const createBookingHandler = TryCatch(
   "CreateBookingHandler",
 );
 
-export const findBookingsOfRoomHandler = TryCatch(
+export const findLandlordBookingsHandler = TryCatch(
   async (req: Request, res: Response) => {
-    const roomId = req.params.id as string;
-    const landlordId = res.locals.user._id;
+    const landlordId = res.locals.user.sub;
 
-    const bookings = await getBookingsByRoom(roomId, landlordId);
+    const bookings = await getBookingsForLandlordProperties(landlordId);
 
     return bookings;
   },
-  "FindBookingsOfRoomHandler",
-);
-
-export const findBookingsByLandlordHandler = TryCatch(
-  async (req: Request, res: Response) => {
-    const landlordId = res.locals.user._id;
-
-    const bookings = await getBookingsByLandlord(landlordId);
-    return bookings;
-  },
-  "FindBookingsByLandlordHandler",
-);
-
-export const approveBookingHandler = TryCatch(
-  async (req: Request, res: Response) => {
-    const bookingId = req.params.id as string;
-    const landlordId = res.locals.user._id;
-
-    const approvedBooking = await approveBooking(bookingId, landlordId);
-
-    return approvedBooking;
-  },
-  "ApproveBookingHandler",
-);
-
-export const rejectBookingHandler = TryCatch(
-  async (req: Request, res: Response) => {
-    const bookingId = req.params.id as string;
-    const landlordId = res.locals.user._id;
-
-    const rejectdBooking = await rejectBooking(bookingId, landlordId);
-
-    return rejectdBooking;
-  },
-  "RejectBookingHandler",
+  "FindLanlordBookings",
 );
