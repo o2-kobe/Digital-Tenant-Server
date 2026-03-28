@@ -3,9 +3,11 @@ import { TryCatch } from "../utils/tryCatch";
 import {
   createRoom,
   deleteRoom,
+  getAvailableRooms,
   getMonthlyRevenue,
   getRoomById,
   getRoomsByProperty,
+  getTenantRooms,
   updateRoom,
 } from "../service/room.service";
 
@@ -98,4 +100,22 @@ export const getMonthlyRevenueHandler = TryCatch(
     return monthlyRevenue;
   },
   "GetMonthlyRevenueHandler",
+);
+
+export const findAvailableRoomsHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    return await getAvailableRooms();
+  },
+  "FindAvailableRoomHandler",
+);
+
+export const findTenantRoomsHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const tenantId = res.locals.user.sub;
+
+    const rooms = await getTenantRooms(tenantId);
+
+    return rooms;
+  },
+  "FindTenantRoomHandler",
 );
