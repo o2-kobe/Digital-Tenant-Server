@@ -172,3 +172,26 @@ export async function getMonthlyRevenue(landlordId: string) {
 
   return monthlyRevenue;
 }
+
+export async function getAvailableRooms() {
+  return await Room.find({ isOccupied: false }).populate({
+    path: "propertyId",
+    select: "city town address name",
+  });
+}
+
+export async function getTenantRooms(tenantId: string) {
+  const tenancies = await Tenancy.find({
+    tenantId,
+    isActive: true,
+  }).lean();
+
+  const roomIds = tenancies.map((t) => t.roomId);
+
+  if (!roomIds.length) return [];
+
+  return await Room.find({ _id: { $in: roomIds } }).populate({
+    path: "propertyId",
+    select: "city town address name",
+  });
+}
