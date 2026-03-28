@@ -267,7 +267,7 @@ export async function getAnnouncementOfProperty(
       },
     },
 
-    // ✅ Join Tenancy
+    //  Join Tenancy
     {
       $lookup: {
         from: "tenancies", // ⚠️ confirm collection name
@@ -283,10 +283,10 @@ export async function getAnnouncementOfProperty(
       },
     },
 
-    // ✅ Join Room via tenancy.roomId
+    //  Join Room via tenancy.roomId
     {
       $lookup: {
-        from: "rooms", // ⚠️ confirm collection name
+        from: "rooms", //  confirm collection name
         localField: "tenancy.roomId",
         foreignField: "_id",
         as: "room",
@@ -299,7 +299,7 @@ export async function getAnnouncementOfProperty(
       },
     },
 
-    // ✅ Add roomLabel field
+    //  Add roomLabel field
     {
       $addFields: {
         roomLabel: "$room.roomLabel",
@@ -334,4 +334,26 @@ export async function getAnnouncementOfProperty(
   ]);
 
   return normalizeMongoArray(announcements);
+}
+
+export async function getTenantsAnnouncements(tenantId: string) {
+  const tenancyIds = await Tenancy.find({
+    tenantId,
+    isActive: true,
+  }).distinct("_id");
+
+  if (!tenancyIds.length) return [];
+
+  return await Announcement.find({ tenancyId: { $in: tenancyIds } })
+    .sort({
+      createdAt: -1,
+    })
+    .populate({
+      path: "tenancyId",
+      select: "roomId",
+      populate: {
+        path: "roomId",
+        select: "roomLabel",
+      },
+    });
 }

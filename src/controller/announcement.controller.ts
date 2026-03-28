@@ -8,6 +8,7 @@ import {
   getAnnouncementOfProperty,
   getAnnouncementsByTenancy,
   getAnnouncementsForRoom,
+  getTenantsAnnouncements,
   updateAnnouncement,
 } from "../service/announcement.service";
 import logger from "../utils/logger";
@@ -152,4 +153,15 @@ export const findPropertyAnnouncementsHandler = TryCatch(
     return announcements;
   },
   "FindPropertyAnnouncementsHandler",
+);
+
+export const findTenantAnnouncementsHandler = TryCatch(
+  async (req: Request, res: Response) => {
+    const tenantId = res.locals.user.sub;
+
+    const announcements = await getTenantsAnnouncements(tenantId);
+
+    return announcements;
+  },
+  "FindTenantAnnouncementsHandler",
 );
