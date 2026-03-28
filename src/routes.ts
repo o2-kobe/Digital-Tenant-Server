@@ -35,7 +35,9 @@ import {
   createRoomHandler,
   deleteRoomHandler,
   findAllRoomsByPropertyHandler,
+  findAvailableRoomsHandler,
   findOneRoomHandler,
+  findTenantRoomsHandler,
   getMonthlyRevenueHandler,
   updateRoomHandler,
 } from "./controller/room.controller";
@@ -64,6 +66,7 @@ import {
   findBillsForPropertyHandler,
   findBillsForRoomHandler,
   findPendingPaymentsHandler,
+  findTenantBillsHandler,
   markBillAsPaidHandler,
   updateBillHandler,
 } from "./controller/bill.controller";
@@ -79,8 +82,14 @@ import {
   findAnnouncementHandler,
   findPropertyAnnouncementsHandler,
   findRoomAnnouncementsHandler,
+  findTenantAnnouncementsHandler,
   updateAnnouncementHandler,
 } from "./controller/announcement.controller";
+import { bookingParamsSchema } from "./schema/booking.schema";
+import {
+  createBookingHandler,
+  findLandlordBookingsHandler,
+} from "./controller/booking.controller";
 
 const router = Router();
 
@@ -171,6 +180,10 @@ router.delete(
 
 router.get("/getMonthlyRevenue", getMonthlyRevenueHandler);
 
+router.get("/availableRooms", findAvailableRoomsHandler);
+
+router.get("/tenantRooms", findTenantRoomsHandler);
+
 // *****************
 // Property Routes
 router.post(
@@ -246,6 +259,8 @@ router.patch(
   markBillAsPaidHandler,
 );
 
+router.get("/tenantBills", findTenantBillsHandler);
+
 // *****************
 // Announcement Routes
 
@@ -290,5 +305,18 @@ router.delete(
   validateResource(announcementParamsSchema),
   deleteAnnouncementHandler,
 );
+
+router.get("/tenantAnnouncements", findTenantAnnouncementsHandler);
+
+// *****************
+// Bookings ROutes
+
+router.post(
+  "/bookings/:id",
+  validateResource(bookingParamsSchema),
+  createBookingHandler,
+);
+
+router.get("/bookings", findLandlordBookingsHandler);
 
 export default router;
