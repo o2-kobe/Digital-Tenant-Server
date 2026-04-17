@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Announcement from "../model/announcement.model";
 import Bill from "../model/bill.model";
 import Tenancy from "../model/tenancy.model";
@@ -49,7 +48,7 @@ export async function createBill(
   await Announcement.create({
     tenancyId: tenancy._id,
     title: `New Bill: ${convertToTitleCase(billData.billType)}`,
-    message: `A new ${billData.billType} bill of ₦${billData.amount} for ${billData.description} is due on ${billData.dueDate}`,
+    message: `A new ${billData.billType} bill of ₦${billData.amount} for "${billData.description}" is due on ${billData.dueDate}`,
   });
 
   return createdBill;
@@ -100,7 +99,7 @@ export async function createBillForRoomsUnderProperty(
   const announcements = tenancies.map((tenancy) => ({
     tenancyId: tenancy._id,
     title: `New Bill: ${convertToTitleCase(data.billType)}`,
-    message: `A new ${data.billType} bill of ₦${data.amount} for ${data.description} is due on ${data.dueDate}`,
+    message: `A new ${data.billType} bill of ₦${data.amount} for "${data.description}" is due on ${data.dueDate}`,
   }));
 
   // Execute writes
@@ -248,14 +247,16 @@ export async function getBillsForRoom(roomId: string, landlordId: string) {
 
   if (!tenancy) return [];
 
-  return await Bill.find({ tenancyId: tenancy._id }).populate({
-    path: "tenancyId",
-    select: "tenantId",
-    populate: {
-      path: "tenantId",
-      select: "fullName",
-    },
-  });
+  return await Bill.find({ tenancyId: tenancy._id })
+    .sort({ createdAt: -1 })
+    .populate({
+      path: "tenancyId",
+      select: "tenantId",
+      populate: {
+        path: "tenantId",
+        select: "fullName",
+      },
+    });
 }
 
 // Get Bills of Property
