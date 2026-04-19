@@ -46,7 +46,7 @@ const userSchema = new Schema<UserDocument>(
       sparse: true, //  allows landlords to have null
       index: true,
     },
-    phoneNumber: { type: String, length: 10 },
+    phoneNumber: { type: String, length: 11 },
   },
   {
     timestamps: true,
